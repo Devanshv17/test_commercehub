@@ -1,66 +1,78 @@
 console.log('WebMCP Adapter Initialized');
 
-// Ensure window.modelContext and its nested properties exist safely
-window.modelContext = window.modelContext || {};
-window.modelContext.agent = window.modelContext.agent || {};
-window.modelContext.agent.tools = window.modelContext.agent.tools || {};
+// Define the window.modelContext object as required
+window.modelContext = {
+    agent: {
+        tools: {
+            // Tools will be defined here
+        }
+    }
+};
 
 const API_BASE_URL = 'http://localhost:3001/api';
 
 /**
- * Fetches all available products from the store.
- * @returns {Promise<Array<Object>>} A promise that resolves to an array of product objects.
- *                                   Each product object typically contains: { id, name, price, description, imageUrl }.
+ * Tool: getProducts
+ * Description: Retrieves a list of all available products from the store.
+ * Returns: A Promise that resolves to an array of product objects, or rejects with an error.
+ * Each product object typically includes: id, name, price, description, imageUrl.
+ * Example Usage: await window.modelContext.agent.tools.getProducts();
  */
 window.modelContext.agent.tools.getProducts = async () => {
+    console.log('WebMCP Tool: getProducts called.');
     try {
-        console.log('WebMCP Adapter: Attempting to fetch products...');
         const response = await fetch(`${API_BASE_URL}/products`);
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            throw new Error(`Failed to fetch products: ${response.status} ${response.statusText} - ${errorText}`);
         }
         const products = await response.json();
-        console.log('WebMCP Adapter: Successfully fetched products:', products);
+        console.log('WebMCP Tool: getProducts success.', products);
         return products;
     } catch (error) {
-        console.error('WebMCP Adapter: Error in getProducts:', error);
-        throw error; // Re-throw the error for the agent to handle
+        console.error('WebMCP Tool: getProducts error.', error);
+        throw error;
     }
 };
 
 /**
- * Adds a specified product to the shopping cart.
- * @param {number} productId The ID of the product to add to the cart.
- * @param {number} [quantity=1] The number of units of the product to add. Defaults to 1.
- * @returns {Promise<Object>} A promise that resolves to a confirmation object, e.g., { success: true, message: 'Added to cart' }.
+ * Tool: addToCart
+ * Description: Adds a specified quantity of a product to the shopping cart.
+ * Parameters:
+ *   - productId (number): The unique identifier of the product to add.
+ *   - quantity (number): The number of items to add. Must be a positive integer.
+ * Returns: A Promise that resolves to a success object (e.g., { success: true, message: 'Added to cart' }), or rejects with an error.
+ * Example Usage: await window.modelContext.agent.tools.addToCart(1, 2); // Adds 2 units of product with ID 1 to the cart
  */
-window.modelContext.agent.tools.addToCart = async (productId, quantity = 1) => {
-    if (typeof productId !== 'number' || productId <= 0) {
-        throw new Error('Invalid productId: Must be a positive number.');
+window.modelContext.agent.tools.addToCart = async (productId, quantity) => {
+    console.log(`WebMCP Tool: addToCart called with productId=${productId}, quantity=${quantity}.`);
+
+    // Basic input validation
+    if (typeof productId !== 'number' && typeof productId !== 'string') {
+        throw new Error('productId must be a number or string.');
     }
-    if (typeof quantity !== 'number' || quantity <= 0) {
-        throw new Error('Invalid quantity: Must be a positive number.');
+    if (typeof quantity !== 'number' || !Number.isInteger(quantity) || quantity < 1) {
+        throw new Error('quantity must be a positive integer.');
     }
 
     try {
-        console.log(`WebMCP Adapter: Attempting to add product ${productId} (quantity: ${quantity}) to cart...`);
         const response = await fetch(`${API_BASE_URL}/cart`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ productId, quantity }),
+            body: JSON.stringify({ productId: Number(productId), quantity }), // Ensure productId is a number for the backend
         });
+
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            throw new Error(`Failed to add product to cart: ${response.status} ${response.statusText} - ${errorText}`);
         }
         const result = await response.json();
-        console.log('WebMCP Adapter: Successfully added to cart:', result);
+        console.log('WebMCP Tool: addToCart success.', result);
         return result;
     } catch (error) {
-        console.error('WebMCP Adapter: Error in addToCart:', error);
-        throw error; // Re-throw the error for the agent to handle
+        console.error('WebMCP Tool: addToCart error.', error);
+        throw error;
     }
 };
