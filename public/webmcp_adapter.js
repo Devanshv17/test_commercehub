@@ -4,39 +4,34 @@ window.modelContext = {
     agent: {
         tools: {
             /**
-             * Fetches all available products from the store.
-             * @returns {Promise<Array<Object>|Object>} A promise that resolves to an array of product objects or an error object.
+             * Fetches a list of all available products from the store.
+             * @returns {Promise<Array<Object>>} A promise that resolves to an array of product objects.
+             * Each product object has properties like `id`, `name`, `price`, `description`, `imageUrl`.
              */
-            getProducts: async () => {
+            getProducts: async function() {
                 try {
-                    const response = await fetch('http://localhost:3001/api/products');
+                    const response = await fetch('/api/products');
                     if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
+                        throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     const products = await response.json();
                     return products;
                 } catch (error) {
                     console.error('Error fetching products:', error);
-                    return { error: error.message, status: 'failed' };
+                    throw error;
                 }
             },
 
             /**
              * Adds a specified quantity of a product to the shopping cart.
-             * @param {number} productId The ID of the product to add.
-             * @param {number} [quantity=1] The quantity of the product to add. Defaults to 1.
-             * @returns {Promise<Object>} A promise that resolves to a success message or an error object.
+             * Note: The current backend implementation logs the action but doesn't persist cart items.
+             * @param {number} productId The ID of the product to add to the cart.
+             * @param {number} quantity The quantity of the product to add.
+             * @returns {Promise<Object>} A promise that resolves to an object indicating success.
              */
-            addProductToCart: async (productId, quantity = 1) => {
-                if (typeof productId !== 'number' || productId <= 0) {
-                    return { error: 'Invalid productId. Must be a positive number.', status: 'failed' };
-                }
-                if (typeof quantity !== 'number' || quantity <= 0) {
-                    return { error: 'Invalid quantity. Must be a positive number.', status: 'failed' };
-                }
-
+            addToCart: async function(productId, quantity) {
                 try {
-                    const response = await fetch('http://localhost:3001/api/cart', {
+                    const response = await fetch('/api/cart', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -44,13 +39,13 @@ window.modelContext = {
                         body: JSON.stringify({ productId, quantity })
                     });
                     if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
+                        throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     const result = await response.json();
-                    return { ...result, status: 'success' };
+                    return result;
                 } catch (error) {
-                    console.error(`Error adding product ${productId} to cart:`, error);
-                    return { error: error.message, status: 'failed' };
+                    console.error('Error adding to cart:', error);
+                    throw error;
                 }
             }
         }
